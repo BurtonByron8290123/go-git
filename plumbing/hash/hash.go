@@ -92,3 +92,10 @@ func (a Algorithm) Size() int {
 		return sha1.Size
 	}
 }
+
+// ShortString returns an abbreviated hex representation of the hash,
+// similar to `git log --abbrev-commit`. The default short length is 7
+// characters, matching git's default abbreviation length.
+func (h Hash) ShortString() string {
+	return fmt.Sprintf("%x", h[:])[:7]
+}
