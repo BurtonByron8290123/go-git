@@ -1,80 +1,92 @@
-// Package hash provides a way for managing the
-// underlying hash implementations used across go-git.
+// Package hash provides hashing utilities for git objects.
+// It supports multiple hash algorithms used in git repositories.
 package hash
 
 import (
-	"crypto"
-	"errors"
+	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"hash"
-
-	"github.com/pjbgf/sha1cd"
-
-	format "github.com/go-git/go-git/v6/plumbing/format/config"
 )
 
-// ErrUnsupportedHashFunction is returned when an unsupported hash function is used.
-var ErrUnsupportedHashFunction = errors.New("unsupported hash function")
+// Algorithm represents a hashing algorithm used in git.
+type Algorithm uint
 
-// algos is a map of hash algorithms.
-var algos = map[crypto.Hash]func() hash.Hash{}
+const (
+	// SHA1 is the default hashing algorithm used by git.
+	SHA1 Algorithm = iota
+	// SHA256 is the new hashing algorithm introduced in git 2.29.
+	SHA256
+)
 
-func init() {
-	reset()
+// Hash represents a git object hash.
+type Hash [32]byte
+
+// ZeroHash is a hash with all bytes set to zero.
+var ZeroHash Hash
+
+// NewHash creates a new Hash from a hex string.
+func NewHash(s string) Hash {
+	b := []byte(s)
+	var h Hash
+	copy(h[:], b)
+	return h
 }
 
-// reset resets the default algos value. Can be used after running tests
-// that registers new algorithms to avoid side effects.
-func reset() {
-	algos[crypto.SHA1] = sha1cd.New
-	algos[crypto.SHA256] = crypto.SHA256.New
+// String returns the hex representation of the hash.
+func (h Hash) String() string {
+	return fmt.Sprintf("%x", h[:])
 }
 
-// RegisterHash allows for the hash algorithm used to be overridden.
-// This ensures the hash selection for go-git must be explicit, when
-// overriding the default value.
-func RegisterHash(h crypto.Hash, f func() hash.Hash) error {
-	if f == nil {
-		return fmt.Errorf("cannot register hash: f is nil")
-	}
-
-	switch h {
-	case crypto.SHA1:
-		algos[h] = f
-	case crypto.SHA256:
-		algos[h] = f
-	default:
-		return fmt.Errorf("%w: %v", ErrUnsupportedHashFunction, h)
-	}
-	return nil
+// IsZero returns true if the hash is the zero hash.
+func (h Hash) IsZero() bool {
+	return h == ZeroHash
 }
 
-// Hash is the same as hash.Hash. This allows consumers
-// to not having to import this package alongside "hash".
-type Hash interface {
+// Hasher wraps a hash.Hash with the algorithm used.
+type Hasher struct {
 	hash.Hash
+	algo Algorithm
 }
 
-// New returns a new Hash for the given hash function.
-// It panics if the hash function is not registered.
-func New(h crypto.Hash) Hash {
-	hh, ok := algos[h]
-	if !ok {
-		panic(fmt.Sprintf("hash algorithm not registered: %v", h))
-	}
-	return hh()
-}
-
-// FromObjectFormat returns the correct Hash to be used based on the
-// ObjectFormat being used.
-// If the ObjectFormat is not recognised, returns ErrInvalidObjectFormat.
-func FromObjectFormat(f format.ObjectFormat) (hash.Hash, error) {
-	switch f {
-	case format.SHA1:
-		return New(crypto.SHA1), nil
-	case format.SHA256:
-		return New(crypto.SHA256), nil
+// NewHasher creates a new Hasher for the given algorithm.
+func NewHasher(algo Algorithm) Hasher {
+	switch algo {
+	case SHA256:
+		return Hasher{Hash: sha256.New(), algo: SHA256}
 	default:
-		return nil, format.ErrInvalidObjectFormat
+		return Hasher{Hash: sha1.New(), algo: SHA1}
+	}
+}
+
+// Sum returns the hash of all data written to the hasher.
+func (h Hasher) Sum() Hash {
+	var result Hash
+	copy(result[:], h.Hash.Sum(nil))
+	return result
+}
+
+// Algorithm returns the algorithm used by the hasher.
+func (h Hasher) Algorithm() Algorithm {
+	return h.algo
+}
+
+// String returns the string representation of the algorithm.
+func (a Algorithm) String() string {
+	switch a {
+	case SHA256:
+		return "sha256"
+	default:
+		return "sha1"
+	}
+}
+
+// Size returns the byte size of the hash for the given algorithm.
+func (a Algorithm) Size() int {
+	switch a {
+	case SHA256:
+		return sha256.Size
+	default:
+		return sha1.Size
 	}
 }
