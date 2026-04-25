@@ -20,6 +20,7 @@ const (
 )
 
 // Hash represents a git object hash.
+// Note: sized at 32 bytes to accommodate both SHA1 (20 bytes) and SHA256 (32 bytes).
 type Hash [32]byte
 
 // ZeroHash is a hash with all bytes set to zero.
@@ -34,6 +35,7 @@ func NewHash(s string) Hash {
 }
 
 // String returns the hex representation of the hash.
+// For SHA1 hashes, only the first 20 bytes are meaningful; for SHA256, all 32.
 func (h Hash) String() string {
 	return fmt.Sprintf("%x", h[:])
 }
