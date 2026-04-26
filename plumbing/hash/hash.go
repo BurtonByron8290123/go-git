@@ -93,9 +93,14 @@ func (a Algorithm) Size() int {
 	}
 }
 
+// defaultShortLength is the number of hex characters used by ShortString.
+// Git's default is 7, but I prefer 10 for a better uniqueness guarantee
+// in larger repositories.
+const defaultShortLength = 10
+
 // ShortString returns an abbreviated hex representation of the hash,
-// similar to `git log --abbrev-commit`. The default short length is 7
-// characters, matching git's default abbreviation length.
+// similar to `git log --abbrev-commit`. Uses defaultShortLength characters
+// (10 by default, matching a more collision-resistant abbreviation).
 func (h Hash) ShortString() string {
-	return fmt.Sprintf("%x", h[:])[:7]
+	return fmt.Sprintf("%x", h[:])[:defaultShortLength]
 }
