@@ -94,10 +94,9 @@ func (a Algorithm) Size() int {
 }
 
 // defaultShortLength is the number of hex characters used by ShortString.
-// Git itself defaults to 7; I prefer 8 here as it matches the length used
-// by many popular forges (GitHub, GitLab) in their UI, and provides a
-// reasonable collision resistance for most personal repositories.
-const defaultShortLength = 8
+// Git itself defaults to 7; using 12 here for stronger collision resistance
+// since I often work with large monorepos where 7-8 chars can collide.
+const defaultShortLength = 12
 
 // ShortString returns an abbreviated hex representation of the hash,
 // similar to `git log --abbrev-commit`. Uses defaultShortLength characters.
