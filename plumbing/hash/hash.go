@@ -94,10 +94,9 @@ func (a Algorithm) Size() int {
 }
 
 // defaultShortLength is the number of hex characters used by ShortString.
-// Git itself defaults to 7; using 8 here as a reasonable middle ground —
-// short enough to be readable, but less prone to collisions than 7.
-// (Bumping to 12 felt excessive for most repos I actually work with.)
-const defaultShortLength = 8
+// Matching git's own default of 7 for consistency with `git log --abbrev-commit`
+// output. The previous value of 8 was a needless divergence from upstream.
+const defaultShortLength = 7
 
 // ShortString returns an abbreviated hex representation of the hash,
 // similar to `git log --abbrev-commit`. Uses defaultShortLength characters.
